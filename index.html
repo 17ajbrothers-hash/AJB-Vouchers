@@ -1,11 +1,182 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>AJB Vouchers</title>
-</head>
-<body>
-  <h1>✅ AJB Vouchers is working!</h1>
-  <p>If you can read this, your GitHub Pages is live.</p>
-</body>
-</html>
+<!doctype html><meta charset="utf-8">
+<title>AJB Vouchers – Cloud Sync</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  body{font-family:system-ui,Segoe UI,Arial;background:#f6f7fb;margin:0}
+  .wrap{max-width:1000px;margin:24px auto;padding:16px}
+  h1{margin:0 0 12px}
+  section{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:16px;margin:12px 0}
+  label{display:block;font-size:14px;margin:8px 0 4px}
+  input,textarea,select,button{font:inherit;padding:10px;border:1px solid #d1d5db;border-radius:10px;width:100%}
+  textarea{min-height:110px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .ok{color:#065f46}
+  .err{color:#991b1b}
+  code.dump{background:#0b1220;color:#7bff75;padding:12px;border-radius:10px;display:block;white-space:pre-wrap}
+  small.mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+</style>
+
+<div class="wrap">
+  <h1>AJ BROTHERS — Vouchers (Cloud)</h1>
+
+  <!-- SETTINGS -->
+  <section>
+    <h3>Cloud Settings</h3>
+    <div class="row">
+      <div>
+        <label>Cloud Sync</label>
+        <select id="sync"><option value="off">Off</option><option value="on">On</option></select>
+      </div>
+      <div>
+        <label>User ID (locked on invoice)</label>
+        <input id="userId" placeholder="RABI" />
+      </div>
+    </div>
+    <label>Cloud API URL</label>
+    <input id="apiUrl" placeholder="https://script.google.com/macros/s/XXXX/exec">
+    <label>Secret Token</label>
+    <input id="secret" placeholder="YOUR_SECRET">
+    <div class="btns">
+      <button onclick="saveSettings()">Save Settings</button>
+      <button onclick="loadCloud()">Load from Cloud</button>
+      <button onclick="clearLocal()">Clear Local Settings</button>
+    </div>
+    <div id="msg"></div>
+  </section>
+
+  <!-- FORM -->
+  <section>
+    <h3>Create / Update Voucher</h3>
+    <div class="row3">
+      <div><label>Voucher Id</label><input id="vId" type="number" value="1001"></div>
+      <div><label>Order Date</label><input id="oDate" type="date"></div>
+      <div><label>Delivery Date</label><input id="dDate" type="date"></div>
+    </div>
+    <div class="row">
+      <div><label>Customer Name</label><input id="name" placeholder="Customer"></div>
+      <div><label>Phone</label><input id="phone" placeholder="03xx-xxxxxxx"></div>
+    </div>
+    <label>Items JSON <small class="mono">(e.g. [{"name":"Jersey","price":1200,"qty":2}])</small></label>
+    <textarea id="items">[{"name":"Jersey","price":1200,"qty":1}]</textarea>
+    <div class="row">
+      <div><label>Old Balance</label><input id="old" type="number" value="0"></div>
+      <div><label>Discount</label><input id="disc" type="number" value="0"></div>
+    </div>
+    <label>Payments JSON <small class="mono">(e.g. {"advance":500,"others":[{"date":"2025-09-15","amount":700}]})</small></label>
+    <textarea id="pay">{"advance":500,"others":[]}</textarea>
+    <div class="row">
+      <div><label>Settled?</label>
+        <select id="settled"><option value="false">No</option><option value="true">Yes</option></select>
+      </div>
+      <div><label>UserId (auto from Settings)</label><input id="uid" disabled></div>
+    </div>
+    <div class="btns">
+      <button onclick="saveVoucher()">Save to Cloud</button>
+      <button onclick="fillDummy()">Fill Dummy</button>
+    </div>
+    <div id="out"></div>
+  </section>
+
+  <!-- CLOUD DUMP -->
+  <section>
+    <h3>Cloud Rows (preview)</h3>
+    <code id="dump" class="dump">—</code>
+  </section>
+</div>
+
+<script>
+const SKEY = 'ajb.cloud.settings';
+const $ = id => document.getElementById(id);
+const today = new Date().toISOString().slice(0,10);
+
+function getS(){ return JSON.parse(localStorage.getItem(SKEY)||'{}'); }
+function setS(s){ localStorage.setItem(SKEY, JSON.stringify(s)); }
+function ok(t){ $('msg').innerHTML = '<div class="ok">'+t+'</div>'; }
+function err(t){ $('msg').innerHTML = '<div class="err">'+t+'</div>'; }
+function dump(t){ $('dump').textContent = t; }
+
+(function init(){
+  $('oDate').value = today; $('dDate').value = today;
+  const s = getS();
+  $('sync').value = s.on?'on':'off';
+  $('apiUrl').value = s.url||'';
+  $('secret').value = s.sec||'';
+  $('userId').value = s.userId || 'RABI';
+  $('uid').value = s.userId || 'RABI';
+})();
+
+function saveSettings(){
+  const s = {
+    on: $('sync').value === 'on',
+    url: $('apiUrl').value.trim(),
+    sec: $('secret').value.trim(),
+    userId: $('userId').value.trim() || 'RABI'
+  };
+  setS(s);
+  $('uid').value = s.userId;
+  ok('Settings saved');
+}
+
+function clearLocal(){
+  localStorage.removeItem(SKEY);
+  location.reload();
+}
+
+async function loadCloud(){
+  const s = getS();
+  if(!s.on) return err('Cloud Sync is OFF');
+  if(!s.url || !s.sec) return err('Please set API URL and Secret');
+  try{
+    const r = await fetch(s.url+'?action=list&key='+encodeURIComponent(s.sec));
+    const t = await r.text();
+    dump(t);
+    ok('Loaded from Cloud');
+  }catch(e){ err('Load error: '+e); }
+}
+
+function fillDummy(){
+  $('vId').value = Math.floor(1000 + Math.random()*9000);
+  $('name').value = 'Walk-in Customer';
+  $('phone').value = '03xx-xxxxxxx';
+  $('items').value = JSON.stringify([{name:'Jersey',price:1200,qty:2}],null,0);
+  $('old').value = 0; $('disc').value = 100;
+  $('pay').value = JSON.stringify({advance:500,others:[]});
+  $('settled').value = 'false';
+}
+
+async function saveVoucher(){
+  const s = getS();
+  if(!s.on) return err('Cloud Sync is OFF');
+  if(!s.url || !s.sec) return err('Please set API URL and Secret');
+  try{
+    // build body in EXACT headers order that backend expects
+    const body = {
+      key: s.sec,
+      Id: Number($('vId').value||0),
+      OrdarDate: $('oDate').value,
+      DeliveryDate: $('dDate').value,
+      CustomerName: $('name').value,
+      Phone: $('phone').value,
+      ItemsJSON: JSON.parse($('items').value || '[]'),
+      OldBal: Number($('old').value||0),
+      Discount: Number($('disc').value||0),
+      PaymentsJSON: JSON.parse($('pay').value || '{}'),
+      UserId: s.userId || 'RABI',
+      Settled: $('settled').value === 'true'
+    };
+
+    $('out').innerHTML = 'Saving…';
+    const r = await fetch(s.url, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    const t = await r.text();
+    $('out').innerHTML = '<code class="dump">'+t.replace(/</g,'&lt;')+'</code>';
+    ok('Saved to Cloud');
+    loadCloud();
+  }catch(e){ err('Save error: '+e); }
+}
+</script>
