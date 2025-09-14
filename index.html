@@ -1,182 +1,290 @@
 <!doctype html><meta charset="utf-8">
-<title>AJB Vouchers – Cloud Sync</title>
+<title>AJ BROTHERS — Vouchers (Simple)</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <style>
-  body{font-family:system-ui,Segoe UI,Arial;background:#f6f7fb;margin:0}
-  .wrap{max-width:1000px;margin:24px auto;padding:16px}
+  body{font-family:system-ui,Segoe UI,Arial;background:#f7f7fb;margin:0}
+  .wrap{max-width:1100px;margin:24px auto;padding:16px}
   h1{margin:0 0 12px}
   section{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:16px;margin:12px 0}
   label{display:block;font-size:14px;margin:8px 0 4px}
-  input,textarea,select,button{font:inherit;padding:10px;border:1px solid #d1d5db;border-radius:10px;width:100%}
-  textarea{min-height:110px}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-  .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-  .ok{color:#065f46}
-  .err{color:#991b1b}
-  code.dump{background:#0b1220;color:#7bff75;padding:12px;border-radius:10px;display:block;white-space:pre-wrap}
-  small.mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+  input,select,button{font:inherit;padding:10px;border:1px solid #d1d5db;border-radius:10px}
+  input[type="number"]{text-align:right}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .row{display:flex;gap:10px;align-items:center}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th,td{border:1px solid #e5e7eb;padding:8px}
+  th{background:#fafafa;font-weight:600}
+  td input{width:100%}
+  .right{text-align:right}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .ok{color:#065f46;margin-top:8px}
+  .err{color:#991b1b;margin-top:8px}
+  .totalbox{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:10px}
+  .totalbox > div{background:#fafafa;border:1px solid #e5e7eb;border-radius:10px;padding:8px}
+  .totalbox h4{margin:0 0 6px;font-size:13px;color:#374151}
+  .totalval{font-weight:700;text-align:right}
 </style>
 
 <div class="wrap">
-  <h1>AJ BROTHERS — Vouchers (Cloud)</h1>
+  <h1>AJ BROTHERS — Vouchers (Simple)</h1>
 
-  <!-- SETTINGS -->
+  <!-- SETTINGS (API URL / SECRET / USER) -->
   <section>
     <h3>Cloud Settings</h3>
-    <div class="row">
+    <div class="grid3">
       <div>
         <label>Cloud Sync</label>
-        <select id="sync"><option value="off">Off</option><option value="on">On</option></select>
+        <select id="sync"><option value="on">On</option><option value="off">Off</option></select>
       </div>
       <div>
         <label>User ID (locked on invoice)</label>
         <input id="userId" placeholder="RABI" />
       </div>
+      <div>
+        <label>Cloud API URL (Apps Script /exec)</label>
+        <input id="apiUrl" placeholder="https://script.google.com/macros/s/XXXX/exec">
+      </div>
     </div>
-    <label>Cloud API URL</label>
-    <input id="apiUrl" placeholder="https://script.google.com/macros/s/XXXX/exec">
-    <label>Secret Token</label>
-    <input id="secret" placeholder="YOUR_SECRET">
-    <div class="btns">
-      <button onclick="saveSettings()">Save Settings</button>
-      <button onclick="loadCloud()">Load from Cloud</button>
-      <button onclick="clearLocal()">Clear Local Settings</button>
+    <div class="grid2">
+      <div>
+        <label>Secret Token</label>
+        <input id="secret" placeholder="YOUR_SECRET">
+      </div>
+      <div class="row" style="margin-top:30px">
+        <button onclick="saveSettings()">Save Settings</button>
+        <button onclick="loadCloud()">Load from Cloud</button>
+        <button onclick="clearLocal()">Clear Settings</button>
+      </div>
     </div>
     <div id="msg"></div>
   </section>
 
-  <!-- FORM -->
+  <!-- VOUCHER FORM -->
   <section>
     <h3>Create / Update Voucher</h3>
-    <div class="row3">
-      <div><label>Voucher Id</label><input id="vId" type="number" value="1001"></div>
-      <div><label>Order Date</label><input id="oDate" type="date"></div>
-      <div><label>Delivery Date</label><input id="dDate" type="date"></div>
+
+    <div class="grid3">
+      <div>
+        <label>Voucher Id</label>
+        <input id="vId" type="number" value="1001">
+      </div>
+      <div>
+        <label>Order Date</label>
+        <input id="oDate" type="date">
+      </div>
+      <div>
+        <label>Delivery Date</label>
+        <input id="dDate" type="date">
+      </div>
     </div>
-    <div class="row">
-      <div><label>Customer Name</label><input id="name" placeholder="Customer"></div>
-      <div><label>Phone</label><input id="phone" placeholder="03xx-xxxxxxx"></div>
+
+    <div class="grid3">
+      <div>
+        <label>Customer Name</label>
+        <input id="name" placeholder="Customer Name">
+      </div>
+      <div>
+        <label>Phone</label>
+        <input id="phone" placeholder="03xx-xxxxxxx">
+      </div>
+      <div>
+        <label>Delivery Days</label>
+        <input id="dDays" type="number" value="0" oninput="recalcDeliveryDate()">
+      </div>
     </div>
-    <label>Items JSON <small class="mono">(e.g. [{"name":"Jersey","price":1200,"qty":2}])</small></label>
-    <textarea id="items">[{"name":"Jersey","price":1200,"qty":1}]</textarea>
-    <div class="row">
-      <div><label>Old Balance</label><input id="old" type="number" value="0"></div>
-      <div><label>Discount</label><input id="disc" type="number" value="0"></div>
+
+    <!-- ITEMS TABLE -->
+    <label style="margin-top:12px">Items</label>
+    <table id="itemsTbl">
+      <thead>
+        <tr>
+          <th style="width:50%">Item</th>
+          <th class="right" style="width:15%">Price</th>
+          <th class="right" style="width:15%">Qty</th>
+          <th class="right" style="width:15%">Amount</th>
+          <th style="width:5%">✖</th>
+        </tr>
+      </thead>
+      <tbody id="itemsBody"></tbody>
+    </table>
+    <div class="btns">
+      <button onclick="addRow()">+ Add Item</button>
+      <button onclick="clearRows()">Clear Items</button>
     </div>
-    <label>Payments JSON <small class="mono">(e.g. {"advance":500,"others":[{"date":"2025-09-15","amount":700}]})</small></label>
-    <textarea id="pay">{"advance":500,"others":[]}</textarea>
-    <div class="row">
-      <div><label>Settled?</label>
+
+    <!-- TOTALS -->
+    <div class="totalbox">
+      <div><h4>Subtotal (Rs.)</h4><div id="tSubtotal" class="totalval">0.00</div></div>
+      <div>
+        <h4>Old Balance</h4>
+        <input id="old" type="number" value="0" oninput="recalcTotals()">
+      </div>
+      <div>
+        <h4>Discount</h4>
+        <input id="disc" type="number" value="0" oninput="recalcTotals()">
+      </div>
+      <div>
+        <h4>Advance</h4>
+        <input id="adv" type="number" value="0" oninput="recalcTotals()">
+      </div>
+      <div><h4>Net Payable</h4><div id="tNet" class="totalval">0.00</div></div>
+      <div><h4>Remaining (Old+Items-Disc-Adv)</h4><div id="tRemain" class="totalval">0.00</div></div>
+    </div>
+
+    <div class="grid3" style="margin-top:10px">
+      <div>
+        <label>Settled?</label>
         <select id="settled"><option value="false">No</option><option value="true">Yes</option></select>
       </div>
-      <div><label>UserId (auto from Settings)</label><input id="uid" disabled></div>
+      <div>
+        <label>User Id (auto)</label>
+        <input id="uid" disabled>
+      </div>
+      <div class="row" style="align-items:flex-end;justify-content:flex-end">
+        <button onclick="saveVoucher()">Save to Cloud</button>
+        <button onclick="fillDummy()">Fill Dummy</button>
+      </div>
     </div>
-    <div class="btns">
-      <button onclick="saveVoucher()">Save to Cloud</button>
-      <button onclick="fillDummy()">Fill Dummy</button>
-    </div>
+
     <div id="out"></div>
   </section>
 
-  <!-- CLOUD DUMP -->
+  <!-- CLOUD PREVIEW -->
   <section>
-    <h3>Cloud Rows (preview)</h3>
-    <code id="dump" class="dump">—</code>
+    <h3>Cloud Rows (preview JSON)</h3>
+    <pre id="dump" style="background:#0b1220;color:#b2f5ea;padding:12px;border-radius:10px;white-space:pre-wrap;max-height:300px;overflow:auto">—</pre>
   </section>
 </div>
 
 <script>
-const SKEY = 'ajb.cloud.settings';
-const $ = id => document.getElementById(id);
-const today = new Date().toISOString().slice(0,10);
+/* ---------- helpers & settings ---------- */
+const SKEY='ajb.simple.settings';
+const $=id=>document.getElementById(id);
+const today=()=>new Date().toISOString().slice(0,10);
 
-function getS(){ return JSON.parse(localStorage.getItem(SKEY)||'{}'); }
-function setS(s){ localStorage.setItem(SKEY, JSON.stringify(s)); }
-function ok(t){ $('msg').innerHTML = '<div class="ok">'+t+'</div>'; }
-function err(t){ $('msg').innerHTML = '<div class="err">'+t+'</div>'; }
-function dump(t){ $('dump').textContent = t; }
+function getS(){return JSON.parse(localStorage.getItem(SKEY)||'{}')}
+function setS(v){localStorage.setItem(SKEY,JSON.stringify(v))}
+function ok(t){$('msg').innerHTML='<div class="ok">'+t+'</div>'}
+function err(t){$('msg').innerHTML='<div class="err">'+t+'</div>'}
+function money(n){return (Number(n)||0).toFixed(2)}
+function addDays(iso,days){
+  const d=new Date(iso||today()); d.setDate(d.getDate()+Number(days||0)); 
+  return d.toISOString().slice(0,10);
+}
 
+/* ---------- init ---------- */
 (function init(){
-  $('oDate').value = today; $('dDate').value = today;
-  const s = getS();
+  $('oDate').value=today(); $('dDate').value=today();
+  const s=getS();
   $('sync').value = s.on?'on':'off';
   $('apiUrl').value = s.url||'';
   $('secret').value = s.sec||'';
-  $('userId').value = s.userId || 'RABI';
-  $('uid').value = s.userId || 'RABI';
+  $('userId').value = s.userId||'RABI';
+  $('uid').value = s.userId||'RABI';
+  addRow(); // start with one row
+  recalcTotals();
 })();
 
+/* ---------- settings actions ---------- */
 function saveSettings(){
-  const s = {
-    on: $('sync').value === 'on',
-    url: $('apiUrl').value.trim(),
-    sec: $('secret').value.trim(),
-    userId: $('userId').value.trim() || 'RABI'
-  };
-  setS(s);
-  $('uid').value = s.userId;
-  ok('Settings saved');
+  const s={on:$('sync').value==='on',url:$('apiUrl').value.trim(),sec:$('secret').value.trim(),userId:($('userId').value.trim()||'RABI')};
+  setS(s); $('uid').value=s.userId; ok('Settings saved');
 }
-
-function clearLocal(){
-  localStorage.removeItem(SKEY);
-  location.reload();
-}
-
+function clearLocal(){localStorage.removeItem(SKEY); location.reload()}
 async function loadCloud(){
-  const s = getS();
-  if(!s.on) return err('Cloud Sync is OFF');
-  if(!s.url || !s.sec) return err('Please set API URL and Secret');
+  const s=getS(); if(!s.on) return err('Cloud Sync is OFF');
+  if(!s.url||!s.sec) return err('Set API URL & Secret');
   try{
-    const r = await fetch(s.url+'?action=list&key='+encodeURIComponent(s.sec));
-    const t = await r.text();
-    dump(t);
-    ok('Loaded from Cloud');
-  }catch(e){ err('Load error: '+e); }
+    const r=await fetch(s.url+'?action=list&key='+encodeURIComponent(s.sec));
+    $('dump').textContent=await r.text(); ok('Loaded from Cloud');
+  }catch(e){ err('Load error: '+e) }
 }
 
-function fillDummy(){
-  $('vId').value = Math.floor(1000 + Math.random()*9000);
-  $('name').value = 'Walk-in Customer';
-  $('phone').value = '03xx-xxxxxxx';
-  $('items').value = JSON.stringify([{name:'Jersey',price:1200,qty:2}],null,0);
-  $('old').value = 0; $('disc').value = 100;
-  $('pay').value = JSON.stringify({advance:500,others:[]});
-  $('settled').value = 'false';
+/* ---------- items table ---------- */
+function addRow(item=''){
+  const tr=document.createElement('tr');
+  tr.innerHTML=`
+    <td><input placeholder="Item name" value="${item?.name||''}" oninput="recalcTotals()"></td>
+    <td class="right"><input type="number" value="${item?.price||0}" oninput="recalcTotals()"></td>
+    <td class="right"><input type="number" value="${item?.qty||1}" oninput="recalcTotals()"></td>
+    <td class="right lineTotal">0.00</td>
+    <td class="right"><button onclick="this.closest('tr').remove();recalcTotals()">✖</button></td>
+  `;
+  $('itemsBody').appendChild(tr);
+  recalcTotals();
+}
+function clearRows(){ $('itemsBody').innerHTML=''; addRow(); recalcTotals(); }
+
+function getItems(){
+  const rows=[...$('itemsBody').querySelectorAll('tr')];
+  return rows.map(r=>{
+    const [name,price,qty]=[...r.querySelectorAll('input')].map(i=>i.value);
+    return {name: name.trim(), price: Number(price||0), qty: Number(qty||0)};
+  }).filter(x=>x.name);
 }
 
+function recalcTotals(){
+  // per-line amount
+  [...$('itemsBody').querySelectorAll('tr')].forEach(r=>{
+    const ins=[...r.querySelectorAll('input')];
+    const amt=(Number(ins[1].value||0)*Number(ins[2].value||0));
+    r.querySelector('.lineTotal').textContent = money(amt);
+  });
+  const items=getItems();
+  const subtotal=items.reduce((s,x)=>s+(x.price*x.qty),0);
+  const old=Number($('old').value||0);
+  const disc=Number($('disc').value||0);
+  const adv=Number($('adv').value||0);
+
+  $('tSubtotal').textContent=money(subtotal);
+  const net=subtotal; // صرف آئٹمز کی رقم
+  $('tNet').textContent=money(net);
+  const remain=old+subtotal-disc-adv;
+  $('tRemain').textContent=money(remain<0?0:remain);
+}
+
+function recalcDeliveryDate(){
+  const days=Number($('dDays').value||0);
+  $('dDate').value = addDays($('oDate').value, days);
+}
+
+/* ---------- save ---------- */
 async function saveVoucher(){
-  const s = getS();
-  if(!s.on) return err('Cloud Sync is OFF');
-  if(!s.url || !s.sec) return err('Please set API URL and Secret');
-  try{
-    // build body in EXACT headers order that backend expects
-    const body = {
-      key: s.sec,
-      Id: Number($('vId').value||0),
-      OrdarDate: $('oDate').value,
-      DeliveryDate: $('dDate').value,
-      CustomerName: $('name').value,
-      Phone: $('phone').value,
-      ItemsJSON: JSON.parse($('items').value || '[]'),
-      OldBal: Number($('old').value||0),
-      Discount: Number($('disc').value||0),
-      PaymentsJSON: JSON.parse($('pay').value || '{}'),
-      UserId: s.userId || 'RABI',
-      Settled: $('settled').value === 'true'
-    };
+  const s=getS(); if(!s.on) return err('Cloud Sync is OFF');
+  if(!s.url||!s.sec) return err('Set API URL & Secret');
+  const items=getItems(); if(items.length===0) return err('Add at least one item');
 
-    $('out').innerHTML = 'Saving…';
-    const r = await fetch(s.url, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(body)
-    });
-    const t = await r.text();
-    $('out').innerHTML = '<code class="dump">'+t.replace(/</g,'&lt;')+'</code>';
-    ok('Saved to Cloud');
-    loadCloud();
-  }catch(e){ err('Save error: '+e); }
+  const body={
+    key: s.sec,
+    Id: Number($('vId').value||0),
+    OrdarDate: $('oDate').value,
+    DeliveryDate: $('dDate').value,
+    CustomerName: $('name').value,
+    Phone: $('phone').value,
+    ItemsJSON: items, // ہم اندر سے JSON بنا رہے ہیں؛ UI میں نہیں دکھا رہے
+    OldBal: Number($('old').value||0),
+    Discount: Number($('disc').value||0),
+    PaymentsJSON: {advance: Number($('adv').value||0), others: []},
+    UserId: s.userId || 'RABI',
+    Settled: $('settled').value==='true'
+  };
+
+  try{
+    $('out').innerHTML='Saving…';
+    const r=await fetch(s.url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const t=await r.text();
+    $('out').innerHTML='<pre style="background:#eef;padding:10px;border-radius:8px;white-space:pre-wrap">'+t.replace(/</g,'&lt;')+'</pre>';
+    ok('Saved to Cloud'); loadCloud();
+  }catch(e){ err('Save error: '+e) }
+}
+
+/* ---------- dummy ---------- */
+function fillDummy(){
+  $('vId').value=Math.floor(1000+Math.random()*9000);
+  $('name').value='Walk-in Customer'; $('phone').value='03xx-xxxxxxx';
+  clearRows(); addRow({name:'Jersey',price:1200,qty:2}); addRow({name:'Nicker',price:900,qty:1});
+  $('old').value=0; $('disc').value=100; $('adv').value=500;
+  $('dDays').value=5; recalcDeliveryDate(); recalcTotals();
 }
 </script>
